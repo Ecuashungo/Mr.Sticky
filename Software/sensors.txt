@@ -1,0 +1,6 @@
+Encoders (4 at disposal, probably only use 2)
+360deg Camera
+IMU (Gyro, Magnetometer, Accelerometer)
+Bumpers (2 microswitches, only with direct contact)
+IR (2 at disposal, distance between 10cm and 80cm)
+Linear Camera (only if Odroid can process both)

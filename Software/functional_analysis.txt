@@ -1,0 +1,19 @@
+What navigation outputs to Arduino:
+
+Output of navigation (from Odroid to Arduino):
+x_goal, y_goal, theta_goal
+x_robot, y_robot, theta_robot
+#x is the coordinate in x direction i.e. pointing from zone 1 to zone 2.
+#y is the coordinate in y direction i.e. pointing from zone 1 to zone 3.
+#theta is the orientation angle of the robot with respect to the x-axis.
+
+Input of navigation:
+3 angles of the triangulation of yellow-blue, blue-red and red-yellow (from Raspberry)
+x, y, theta from the encoders (from Arduino)
+
+IMU-data if necessary (magnetometer) (gyroscope?)
+Bumpers if necessary
+
+
+function:
+merge triangulation with odometry (kalman filter) to get final position estimation
