@@ -1,11 +1,7 @@
 /*************************************************
  * Project: Mr. Sticky
  * File: motor_control
- * General comments: 
- *                  - all distances are given in mm
- *                  - all angle are in degrees
- * Author: Héloïse
- * Last update: 27.05.2017
+ * Last update: 16.06.2017
  *************************************************/
 
 // This is the command in the command line to use to command the motors:
@@ -22,12 +18,9 @@
 // ROS environment
 #include <ros.h>
 #include <std_msgs/Int16MultiArray.h>
-//#include <std_msgs/Int32.h>
-//#include <std_msgs/Int32MultiArray.h>
 #include <sticky_robot/enc_array_msg.h>
 #include <sticky_robot/ir_array_msg.h>
 #include <sticky_robot/bumper_msg.h>
-//#include <sticky_robot/ctrl_msg.h>
 
 #if (ARDUINO >= 100)
   #include <Arduino.h>
@@ -45,13 +38,13 @@
 
 #define ENC1_A 2  
 #define ENC1_B 3 
-#define ENC2_A 20 //18 and 19 --> 4 and 5 do not work for encoder
+#define ENC2_A 20
 #define ENC2_B 21
-#define ENCC_A 18 // does not work for now
-#define ENCC_B 19 // does not work for now
+#define ENCC_A 18
+#define ENCC_B 19
 #define INTERRUPT_PIN_ENC1_A 0// this is the order of the interrupt pins, no conflict with pins
 #define INTERRUPT_PIN_ENC1_B 1
-#define INTERRUPT_PIN_ENC2_A 3 //number 2 does not work here
+#define INTERRUPT_PIN_ENC2_A 3
 #define INTERRUPT_PIN_ENC2_B 2
 #define INTERRUPT_PIN_ENCC_A 5
 #define INTERRUPT_PIN_ENCC_B 4
@@ -79,12 +72,7 @@ sticky_robot::bumper_msg bmp_msg;
 ros::Publisher bumpers("bumpers", &bmp_msg);
 
 void motor_cb(const std_msgs::Int16MultiArray& my_ctrl_msg)
-//void motor_cb(const sticky_robot::ctrl_msg& ctrl_msg)
 {
-//  int left_speed = my_ctrl_msg.l_speed;
-//  int right_speed = my_ctrl_msg.r_speed;
-//  int conv_speed = my_ctrl_msg.c_speed;
-
   int left_speed = my_ctrl_msg.data[0];
   int right_speed = my_ctrl_msg.data[1];
   int conv_speed = my_ctrl_msg.data[2];
@@ -92,7 +80,6 @@ void motor_cb(const std_msgs::Int16MultiArray& my_ctrl_msg)
   movingMotors(left_speed, right_speed, conv_speed);
 }
 ros::Subscriber<std_msgs::Int16MultiArray> control_sub("control", motor_cb);
-//ros::Subscriber<sticky_robot::ctrl_msg> control_sub("control", motor_cb);
 
 int32_t encoder1_pos = 0;
 int32_t encoder2_pos = 0;
@@ -131,7 +118,7 @@ void setup() {
   pinMode(ENC2_B, INPUT);
   pinMode(ENCC_A, INPUT);
   pinMode(ENCC_B, INPUT);
-  digitalWrite(ENC1_A, HIGH);  // FIXME I am not so sure why we do this
+  digitalWrite(ENC1_A, HIGH);
   digitalWrite(ENC1_B, HIGH); 
   digitalWrite(ENC2_A, HIGH);
   digitalWrite(ENC2_B, HIGH);
@@ -145,9 +132,7 @@ void setup() {
   attachInterrupt(INTERRUPT_PIN_ENC2_B, managementInterruptEnc2B, CHANGE); //Interrupt of the encoder 1 (output 1)
   attachInterrupt(INTERRUPT_PIN_ENCC_A, managementInterruptEncCA, CHANGE); //Interrupt of the encoder 1 (output 0)
   attachInterrupt(INTERRUPT_PIN_ENCC_B, managementInterruptEncCB, CHANGE); //Interrupt of the encoder 1 (output 1)
-  
 
-  //FIXME had only one of these (back) before.. test this
   pinMode(FRONT_SENSOR_CONVEYOR, INPUT);
   pinMode(LEFT_SENSOR_OBSTACLE, INPUT);   
   pinMode(CENTER_SENSOR_OBSTACLE, INPUT);
@@ -155,7 +140,6 @@ void setup() {
   pinMode(BACK_SENSOR_CONVEYOR, INPUT);
   pinMode(BOTTOM_SENSOR_CONVEYOR, INPUT);
 
-  
   pinMode(PIN_BUMPER_LEFT, INPUT);
   pinMode(PIN_BUMPER_RIGHT, INPUT);
 
@@ -243,7 +227,7 @@ void managementInterruptEnc2A()
 
 //Interruption which is called when the state of the channel B of the encoder 2 changes
 void managementInterruptEnc2B()
-{//FIXME never gets to this function
+{
   Enc2_B_set = digitalRead(ENC2_B) == HIGH;
 
   if(Enc2_A_set == Enc2_B_set)
@@ -280,7 +264,7 @@ void managementInterruptEncCB()
 void loop() {
   nh.spinOnce();
   
-  int volts = analogRead(FRONT_SENSOR_CONVEYOR);//*0.0048828125;
+  int volts = analogRead(FRONT_SENSOR_CONVEYOR);
   ir_readings.ir_front = volts; 
   volts = analogRead(LEFT_SENSOR_OBSTACLE);
   ir_readings.ir_left = volts;
@@ -302,18 +286,12 @@ void loop() {
   encoder.publish(&enc_readings);
   
   
-  bool switch1 = !digitalRead(PIN_BUMPER_LEFT); //define the left switch as switch 1
+  bool switch1 = !digitalRead(PIN_BUMPER_LEFT); //define the left switch as switch 1, convert to normally false
   bool switch2 = !digitalRead(PIN_BUMPER_RIGHT);
 
   bmp_msg.bumper_left = switch1;
   bmp_msg.bumper_right = switch2;
   bumpers.publish(&bmp_msg);
-  
-  
-//  digitalWrite(M1_EN, HIGH);
-//  analogWrite(M1_PWM, 100);
-//  digitalWrite(M2_EN, LOW);
-//  analogWrite(M2_PWM, 100);
-  
-  delay(200);
+
+  delay(100);
 }

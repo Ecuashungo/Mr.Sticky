@@ -1,26 +1,13 @@
 import numpy as np
 import math
-import matplotlib.pyplot as plt
-from random import uniform
 import sys
-#sys.path.append("/home/odroid/sticky-robot/software/state_machine/")
-#sys.path.append("C:/Users/Oechslin/sticky-robot/software/state_machine/")
-#import robot_structure as rs
-#from robot_structure import *
 sys.path.append("/home/odroid/sticky-robot/software/parameters/")
-sys.path.append("C:/Users/Oechslin/sticky-robot/software/parameters/")
 import parameters as param
-import time  # obsolete and not used anymore
 import rospy  # mainly for get_time
-
-# Author:   Roman Oechslin
-# Date:     26.05.2017
-# Version:  0.9
-
 
 # Define constants
 DEBUG = param.get_debug_verbose() # can be zero or one for debugging perposes
-THOUSAND = 1000
+THOUSAND = 1000  # just a big number
 
 class KalmanFilter:
     def __init__(self):
@@ -34,7 +21,7 @@ class KalmanFilter:
         self.P_pred_est_cov = 100 * np.identity(3)  # is only zero if position is known with absolute certainty
 
         # Define time step
-        self.dT = 0.1  # FIXME update this with real timestep
+        self.dT = None  # This has been updated with the real timestep
 
         # Control variables
         self.x_estimate = Pose("estimation")
@@ -80,8 +67,7 @@ class KalmanFilter:
             self.last_propagate_time = rospy.get_time()
         self.last_propagate_time = rospy.get_time()
         x_new = RK4(self.x_estimate.get_pose_as_vec(), self.u_control, passed_time)
-#        x_new = limit_angle_2pi(x_new)
-        print("I propagated x in kalman line 79, x = ", x_new)
+        print("I propagated x in kalman line 70, x = ", x_new)
         return x_new
 
     def get_jacobian(self, theta):
@@ -126,10 +112,9 @@ class KalmanFilter:
 
     def cb_control(self, data):
         if DEBUG:
-            print("cb_control has been called in kalman line 123")
+            print("cb_control has been called in kalman line 115")
         # data = [right_wheel_speed, left_wheel_speed, conveyor_belt_speed] is between [0..255]
-        # FIXME this should be converted to [m/s]
-        v_right = data.data[0] / 255 * 0.3 # * FULL_SPEED  # for with no FULL_SPEED, velocity of 1m/s is used
+        v_right = data.data[0] / 255 * 0.3 # Full speed is about 0.3 m / s (empirically)
         v_left = data.data[1] / 255 * 0.3
 
         forward_speed = (v_right + v_left) / 2
@@ -140,8 +125,7 @@ class KalmanFilter:
 
     def cb_triangulation(self, data):
         if DEBUG:
-            print("cb_triangulation has been called in kalman line 137")
-        # data = [x_triang, y_triang, theta_triang] in [m, m, rad]
+            print("cb_triangulation has been called in kalman line 128")
         x_pos = data.x
         y_pos = data.y
         theta = data.theta
@@ -153,7 +137,7 @@ class KalmanFilter:
 
     def cb_encoders(self, data):
         if DEBUG:
-            print("cb_encoders has been called in kalman line 150")
+            print("cb_encoders has been called in kalman line 140")
         impulsion = param.get_impulsion_encoder()  # impulsions per round
         r_wheel = param.get_radius_of_wheel()
         reduction = param.get_reduction_ratio_motor()
@@ -164,42 +148,31 @@ class KalmanFilter:
         l_enc_dist = float(data.l_encoder) / impulsion / reduction * 2 * math.pi * r_wheel
         r_enc_dist = float(data.r_encoder) / impulsion / reduction * 2 * math.pi * r_wheel
 
-        if DEBUG:
-            #print("converted encoder measures = ", l_enc_dist, r_enc_dist)
-            pass
-
         delta_l_enc = l_enc_dist - self.old_l_encoder_dist
         delta_r_enc = r_enc_dist - self.old_r_encoder_dist
         self.old_l_encoder_dist = l_enc_dist
         self.old_r_encoder_dist = r_enc_dist
-        if DEBUG:
-            #print("covered distance = ", delta_l_enc, delta_r_enc)
-            pass
+
         if self.last_enc_update_time is not None:
             time_step = rospy.get_time() - self.last_enc_update_time
         else:
             time_step = THOUSAND   # just a huge number
         self.last_enc_update_time = rospy.get_time()
 
-        # TODO write a conversion function
-        conversion = 1
-        delta_l = delta_l_enc * conversion
-        delta_r = delta_r_enc * conversion
+        delta_l = delta_l_enc
+        delta_r = delta_r_enc
 
         new_x = self.x_estimate.x + (delta_l + delta_r) / 2 * math.cos(self.x_estimate.theta)
         new_y = self.x_estimate.y + (delta_l + delta_r) / 2 * math.sin(self.x_estimate.theta)
 
         if DEBUG:
-            print("new x and y = ", new_x, new_y, "in line 187 kalman")
+            print("new x and y = ", new_x, new_y, "in line 169 kalman")
             pass
         new_theta = self.x_estimate.theta + math.atan2(delta_r - delta_l, param.get_distance_between_wheels_kalman())
         measured_pose_odom = np.array([[new_x], [new_y], [new_theta]])
 
-        # FIXME this is a trial to ignore the control input and only use kalman
-        #self.x_estimate.update(measured_pose_odom)
-        #return
         if DEBUG:
-            print("measured pose odometry: ", measured_pose_odom, " in kalman line 197")
+            print("measured pose odometry: ", measured_pose_odom, " in kalman line 175")
         # apply filter on odometry
         covariance = param.get_covariance_odometry_kalman(time_step)
         self.estimate(measured_pose_odom, covariance)
@@ -236,8 +209,6 @@ def limit_angle_2pi(x_vec):
     x_vec[2] = angle
     return x_vec
 
-
-# had some problems having this in robot_structure
 class Pose:
     def __init__(self, name, pos=[0., 0., 0.]):
         self.name = name
@@ -263,5 +234,3 @@ class Pose:
 if __name__ == '__main__':
     pass
 
-
-#   TODO try callback control, callback triangulation

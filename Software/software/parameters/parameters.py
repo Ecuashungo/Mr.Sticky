@@ -14,12 +14,10 @@ def get_covariance_triangulation_kalman():
 
 
 def get_distance_between_wheels_kalman():
-    # FIXME update this value
     DISTANCE_BETWEEN_WHEELS = 0.34  # [m] distance between the wheels
     return DISTANCE_BETWEEN_WHEELS
 
 def get_radius_of_wheel(): # is used in kalman and fsm
-    # FIXME update this value
     RADIUS = 0.075  # [m] radius of the wheels
     return RADIUS
 
@@ -32,7 +30,6 @@ def get_covariance_matrix_Q_kalman():
 
 def get_covariance_odometry_kalman(time_step):
     # this covariance is a function of time, since the longer we have not received a signal, the less we trust the measure
-    # FIXME make an intelligent function with time here
     #ODOM_SIGMA_XY = time_step + 0.3  # [m] this is the estimated standard deviation of x and y of the odometry
     #ODOM_SIGMA_THETA = time_step + 0.1  # [rad] this is the estimated standard deviation of theta of the odometry
     ODOM_SIGMA_XY = 0.3  # [m] this is the estimated standard deviation of x and y of the odometry
@@ -42,20 +39,13 @@ def get_covariance_odometry_kalman(time_step):
     return R_ODOM
 
 
-
-
-def get_half_throttle_control():
-    # this speed is used for turning --> value is within [0, 255]
-    HALF_THROTTLE = 125
-    return HALF_THROTTLE
-
 def get_full_throttle_control():
     # this speed is used for driving straight --> value is within [0, 255]
     FULL_THROTTLE = 255
     return FULL_THROTTLE
 
 def get_conv_speed_control():
-    CONV_SPEED = 125  # FIXME this value can be changed when testing
+    CONV_SPEED = 125
     # change this maybe to make it turbo release
     return CONV_SPEED
 
@@ -81,7 +71,6 @@ def get_slew_for_speeds_control():
 def build_up_threshold_control():
     THRESHOLD = 10  # this is used to detect if we are trying to hit an obstacle all the time
     return THRESHOLD
-
 
 def get_obstacle_break_normal_control():
     normal = 30
@@ -122,7 +111,7 @@ def get_arrival_threshold():  # this is used by fsm and control
     return THRESHOLD
 
 def get_arrival_angle_threshold():  # this is used by fsm and control
-    ANGLE_THRESHOLD = 0.3  # [rad] if we are within this angle, we consider it as matched
+    ANGLE_THRESHOLD = 0.2  # [rad] if we are within this angle, we consider it as matched
     return ANGLE_THRESHOLD
 
 def get_goal_update_duration_fsm():
@@ -135,18 +124,16 @@ def get_time_when_last_homing_fsm():
 
 
 def get_turning_angle_increment_fsm():
-    TURNING_ANGLE = 0.07 # [rad] the angle deviation that we want to have when on the lookout
+    TURNING_ANGLE = 0.03 # [rad] the angle deviation that we want to have when on the lookout
     return TURNING_ANGLE
 
 def get_ir_front_threshold_fsm():
-    # TODO adapt these values
     #170 - 190 --> normal range
     #190  --> robot end
     THRESHOLD = 200
     return THRESHOLD
 
 def get_ir_left_threshold_fsm():
-    # TODO adapt these values
     #0 - 10 --> normal range
     #50 - 70 --> 0.5m
     #80 - 90 --> 0.3m
@@ -154,7 +141,6 @@ def get_ir_left_threshold_fsm():
     return THRESHOLD
 
 def get_ir_center_threshold_fsm():
-    # TODO adapt these values
     #0 - 20 --> normal range
     #40 - 50 --> 0.5m
     #90 - 110 --> 0.3m
@@ -162,7 +148,6 @@ def get_ir_center_threshold_fsm():
     return THRESHOLD
 
 def get_ir_right_threshold_fsm():
-    # TODO adapt these values
     #0 - 30 --> normal range
     #80 - 90 --> 0.5m
     #110 - 120 --> 0.3m
@@ -170,21 +155,19 @@ def get_ir_right_threshold_fsm():
     return THRESHOLD
 
 def get_ir_back_threshold_fsm():
-    # TODO adapt these values
     #140 --> normal range
     #160 - 170  --> robot end
     THRESHOLD = 200
     return THRESHOLD
 
 def get_ir_bottom_threshold_fsm():
-    # TODO adapt these values
     #60 --> normal range
     #100 - 150  --> robot end
     THRESHOLD = 300
     return THRESHOLD
 
 def get_loading_time_approach_fsm():
-    LOAD_TIME = 5
+    LOAD_TIME = 5  # [s] this is the duration of how long the conveyor belt spins in one direction
     return LOAD_TIME
 
 def get_alpha_for_obstacle_avoid_fsm():
@@ -195,19 +178,12 @@ def get_factor_for_obstacle_avoid_fsm():
     COEFF = 2  # multiplying factor if obstacle in center
     return COEFF
 
-def get_y_angle_bottle_contact_fsm():
-    # FIXME measure this parameter
-    Y_LIMIT = 0.5  # [rad] this is the angle where the bottle disappears
-    return Y_LIMIT
-
 def get_grabbing_encoder_distance_fsm():
-    # FIXME tune this such that it is about 10 cm
     ENCODER_DIST = 0.2  # [m] encoder counter to measure distance
     return ENCODER_DIST
 
 
 def get_turning_encoder_distance_fsm():
-    # FIXME tune this such that it is about 10cm on the conveyor belt
     ENCODER_DIST = 0.1  # [m] encoder counter to measure distance of conveyor belt
     return ENCODER_DIST
 
@@ -220,7 +196,7 @@ def get_ir_back_filter_coeff_fsm():
     return FILTER_COEFF
 
 def get_button_hold_time_fsm():
-    TIME = 5  # [s] FIXME define a time parameter here
+    TIME = 5  # [s]
     return TIME
 
 def get_reduction_ratio_motor():  # this is used in kalman and fsm

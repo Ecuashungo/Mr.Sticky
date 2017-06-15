@@ -21,7 +21,7 @@ STATE homing
  in the end an automatic release procedure is done
 
 STATE go_to_point:
- when the robot wants to go to a new zone (1-4) or wants to recenter
+ when the robot wants to go to a new zone (1-4) or wants to recenter, can also be one of the waypoints or a new goal
 
 STATE lookout:
  search for bottles: start timer, wait a bit, turn a bit, wait, turn, until bottle has been found or timer is up
