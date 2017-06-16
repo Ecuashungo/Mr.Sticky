@@ -8,35 +8,42 @@ sys.path.append("/home/odroid/sticky-robot/software/bottle_detection")
 import haar_detector as hd
 
 # choose classifier:
-classifier = '/home/odroid/sticky-robot/software/bottle_detection/classifiers/haarcascade_frontalface_default.xml'
+classifier = '/home/odroid/sticky-robot/software/bottle_detection/classifiers/final_training_7617.xml'
 
 if __name__ == '__main__':
     try:
-        start_time = time.time()
         # initialize bottle detector
         bottle_detector = hd.HaarDetector(classifier, 'bottle')
-        bottle_detector.visualize(False)
-        bottle_detector.set_timer(True)
+        bottle_detector.init_video()
         pub = rospy.Publisher('bottles', bottle_msg, queue_size=10)
         rospy.init_node('bdetector', anonymous=True)
         rate = rospy.Rate(10)  # 10hz
-
-        print('init time', time.time() - start_time)
         bt_msg = bottle_msg()
         while not rospy.is_shutdown():
             try:
-                bottle_list = bottle_detector.automated_detect(dtime=2)
+                bottle_detector.time_counter = bottle_detector.time_counter + 1
+                ret = bottle_detector.get_frame(verbose=False, visualisation=False)
+                if ret is True:
+                    bottle_detector.detect(verbose=False, visualisation=False)
+                    bottle_detector.validate_bottle_age(verbose=False)
+                    bottle_detector.pixel2angle(bottle_detector.object_list)
 
-                if not len(bottle_list) == 0:
-                    bt_msg.num_bottles = len(bottle_list)
-                    bt_msg.angles = hd.get_list_info(bottle_list, 'angle')
-                    final_bottle = bottle_detector.decision(bottle_list)
-                    [bt_msg.final_x_angle, bt_msg.final_y_angle] = final_bottle.get_angle()
+                    # # validate list, filter out false positives
+                    bottle_detector.filter(verbose=False)
 
-                pub.publish(bt_msg)
-                rate.sleep()
+                    bottle_detector.filter_y_angle(verbose=False)
+
+                    # # decide what bottle is pursued
+                    final_bottle = bottle_detector.decide()
+
+                    bt_msg.num_bottles = len(bottle_detector.object_list)
+                    bt_msg.final_x_angle = final_bottle.get_angle()[0]
+                    bt_msg.final_y_angle = final_bottle.get_angle()[1]
+
+
+                    pub.publish(bt_msg)
+                    rate.sleep()
             except Exception as e:
                 print(e)
-                pub.publish(bt_msg)
     except rospy.ROSInterruptException:
         pass

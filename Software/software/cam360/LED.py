@@ -29,15 +29,15 @@ class LED:
             self.color_tuple = (None, None, None)
 
         self.angle = None  # angle with reference to the y axis (from center of image towards bottom)
-        self.mask = None
+        self.mask = None  # color mask for led detection
         self.mask_processed = None
         self.contours = None
-        self.contour_final = None
+        self.contour_final = None  # final contour which corresponds to LED
         self.img = None
         self.img_color = None
         self.hierarchy = None
         self.moments = None
-        self.moment_final = None
+        self.moment_final = None  # final moment to calculate pixel position of LED
         self.edge = None
 
 
