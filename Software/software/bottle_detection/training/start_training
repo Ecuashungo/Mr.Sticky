@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# This script starts the training process for Haar Training
+# The arguments are the following: 1. numPos 2. numNeg 3. w 4. h 5. number of positive images
+
+mkdir data
+
+# goes to right environment
+workon cv3
+
+# This line creates vectorfile
+opencv_createsamples -info pos.txt -vec positives.vec -w $3 -h $4 -num $5
+
+# This line starts the training process
+
+opencv_traincascade -data data/ -vec positives.vec -bg neg.txt -numPos $1 -numNeg $2 -w $3 -h $4
