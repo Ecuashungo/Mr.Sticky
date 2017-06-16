@@ -295,7 +295,7 @@ class HaarDetector:
 
         """
         How do we track? 
-        1) Tracking only occurs when the robot moves, so we could use the information of the motor_control
+        1) Tracking only occurs when the robot moves, so we could use the information of the arduino_script
         or the encoders to do the tracking. E.g. angle that has been done by robot --> compare object_list_validated 
         before and after movement
         2) Use OpenCV to track:
