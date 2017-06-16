@@ -114,8 +114,8 @@ class KalmanFilter:
         if DEBUG:
             print("cb_control has been called in kalman line 115")
         # data = [right_wheel_speed, left_wheel_speed, conveyor_belt_speed] is between [0..255]
-        v_right = data.data[0] / 255 * 0.3 # Full speed is about 0.3 m / s (empirically)
-        v_left = data.data[1] / 255 * 0.3
+        v_right = data.data[0] / 255 * 0.5 # Full speed is about 0.5 m / s (empirically)
+        v_left = data.data[1] / 255 * 0.5
 
         forward_speed = (v_right + v_left) / 2
         angular_speed = (v_right - v_left) / param.get_distance_between_wheels_kalman()
