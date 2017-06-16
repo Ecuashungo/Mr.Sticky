@@ -3,8 +3,6 @@ import math as m
 import itertools as iter
 
 class Triangulation:
-    # todo-cf: add orientation
-    # todo-cf: add robustness: compare with encoder info and old point that position calcultion is correct
 
     def __init__(self, led_list):
         self.led_list = led_list
@@ -18,8 +16,6 @@ class Triangulation:
         self.beacon_dict = {'blue': (8.0, 0), 'yellow': (0, 0),
                             'green': (8.0, 8.0), 'red': (0, 8.0)}
 
-        #self.total_led_list = []  # list that is used in the end for total algorithm
-
         self.robot_position = []
 
     def run(self):
@@ -31,7 +27,6 @@ class Triangulation:
         # if four led's available: calculate position 4 times and average
         elif len(self.led_list) == 4:
             print('4 leds given for triang.run()')
-            # led_lists = self.total_led_list
             i1, i2, i3, i4 = iter.combinations(self.led_list, 3)
             led_lists = [i1, i2, i3, i4]
 
@@ -60,17 +55,14 @@ class Triangulation:
         angle_list = []
         # if led_list is tuple: conversion to list
         led_list = list(led_list)
-        #print('led_list', led_list)
 
         # sorting list from smallest angle to largest.
         sorted_led_list = sorted(led_list, key=lambda x: x.angle, reverse=False)
-        #print('sorted led_list', sorted_led_list)
 
         for led in sorted_led_list:
             beacon_list_start.append(self.beacon_dict[led.color])
             angle_list.append(led.angle)
 
-        #print('angle list: ', angle_list)
 
         # Step 0: Definition of variables
         x1 = beacon_list_start[0][0]
@@ -116,23 +108,6 @@ class Triangulation:
         xr = x2 + (k31 * (y12 - y23)) / D
         yr = y2 + (k31 * (x23 - x12)) / D
 
-        #todo-cf: test if theta works!
         theta = m.atan2((y2-yr),(x2-xr))-a2
 
         return [xr, yr, theta]
-
-    # def orientation(self, led_list, pos):
-    #     # if led_list is tuple: conversion to list
-    #     led_list = list(led_list)
-    #
-    #     # sorting list from smallest angle to largest.
-    #     sorted_led_list = sorted(led_list, key=lambda x: x.angle, reverse=False)
-    #
-    #     # 2 norm to green led:
-    #     dy = (self.beacon_dict['green'][1] - pos[1])
-    #     dx = (self.beacon_dict['green'][0] - pos[0])
-    #
-    #     if sorted_led_list[0].color == 'green':
-    #         orientation = 2 * m.pi - sorted_led_list[-1].angle + m.tan(dy / dx)
-    #     elif sorted_led_list[0].color == 'yellow':
-    #         orientation = 2 * m.pi - sorted_led_list[-1].angle + m.tan(dy / dx)
