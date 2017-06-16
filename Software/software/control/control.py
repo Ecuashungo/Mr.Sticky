@@ -4,10 +4,6 @@
 import numpy as np
 import math
 import sys
-#sys.path.append("C:/Users/Oechslin/sticky-robot/software/state_machine/")
-#sys.path.append("/home/odroid/sticky-robot/software/state_machine/")
-#import robot_structure as rs
-import time  # FIXME probably not used anymore
 sys.path.append("/home/odroid/sticky-robot/software/parameters/")
 import parameters as param
 import rospy
@@ -121,7 +117,7 @@ class Control:
     def compute(self):
         # the published information is speeds = [left_wheel, right_wheel, conveyor_belt]
         speeds = [NOSPEED, NOSPEED, NOSPEED]
-        # FIXME put time limit on state machine rather than here
+
         if self.time_old_dist is None:
             self.time_old_dist = rospy.get_time()
             passed_time = 0
@@ -132,7 +128,6 @@ class Control:
                 if i == NOT_VALID:
                     return speeds
 
-            # FIXME: this is weird!
             if self.desired_conv_direction:
                 speeds = get_conveyor_speed(self.desired_conv_direction)
             else:
@@ -141,10 +136,9 @@ class Control:
                 orientation_diff = get_orientation_diff(self.my_pose, self.next_pose)
 
                 if DEBUG:
-                    print("dist = ", dist , "in control line 145")
-                    print("orientation diff = ", orientation_diff, "in control line 146")
+                    print("dist = ", dist , "in control line 139")
+                    print("orientation diff = ", orientation_diff, "in control line 140")
                 if math.fabs(orientation_diff) > param.get_arrival_angle_threshold():
-                    # todo instead of sending sign, we could send magnitude
                     if self.build_up > param.build_up_threshold_control():
                         speeds = self.get_speed_for_straight(orientation_diff, dist, passed_time)
                     else:
@@ -164,10 +158,10 @@ class Control:
         speeds = self.avoid_obstacles(speeds)
 
         if DEBUG:
-            print("speed before slack, after avoidance = ", speeds, "in control in line 165")
+            print("speed before slew, after avoidance = ", speeds, "in control in line 161")
         speeds = self.introduce_speed_slack(speeds)
         if DEBUG:
-            print("final speed = ", speeds, "in control line 168")
+            print("final speed = ", speeds, "in control line 164")
 
         self.old_speed_x = speeds[0]
         self.old_speed_y = speeds[1]
@@ -243,7 +237,7 @@ class Control:
                     # nothing is blocked
                     if self.build_up > param.build_up_threshold_control():
                         if DEBUG:
-                            print("build up was high in control line 245, ", self.build_up)
+                            print("build up was high in control line 240, ", self.build_up)
                         speeds[0] += 20  # values have been found empirically
                         speeds[1] += 20
 
@@ -254,16 +248,16 @@ class Control:
 
                     if DEBUG:
                         print("nothing is blocked -> continue")
-                        print("slacked speed in control line 255 = ", speeds)
+                        print("slacked speed in control line 251 = ", speeds)
                         pass
         self.build_up += increment_val
         if DEBUG:
-            print("build up is: ", self.build_up, "in control line 259")
+            print("build up is: ", self.build_up, "in control line 255")
         return limit_full_throttle(speeds)
 
 
     def introduce_speed_slack(self, speeds):
-        # i had to introduce this slew otherwise arduino rebooted when too sudden changes
+        # Had to introduce this slew otherwise arduino rebooted when too sudden changes
         # and motors broke down
         SLEW = param.get_slew_for_speeds_control()
         speeds[0] = np.clip(speeds[0], self.old_speed_x - SLEW - SLEW * (speeds[0] > 0), self.old_speed_x + SLEW + SLEW * (speeds[0] < 0))
@@ -274,7 +268,7 @@ class Control:
 
     def get_speed_for_straight(self, orientation_diff, dist, passed_time):
         if DEBUG:
-            print("I want to go straight in control in line 275")
+            print("I want to go straight in control in line 271")
         gains = param.get_dist_pid_gains_control()
         # pid gains, but for now mainly p and a bit of an i is used
         k_prop = gains[0]
@@ -285,22 +279,21 @@ class Control:
         forward_speed = k_prop * dist + k_deriv * (dist - self.old_dist) / passed_time
         forward_speed += k_int * self.total_arrival_error
         if DEBUG:
-            print("dist = ", dist, "line 288 in control")
-            print("forward speed = ", forward_speed, "line 289 in control")
+            print("dist = ", dist, "line 282 in control")
+            print("forward speed = ", forward_speed, "line 283 in control")
 
-        # TODO implement angle depending difference for lw_speed and rw_speed
         lw_speed = forward_speed
         rw_speed = forward_speed
         cv_speed = NOSPEED
 
         speeds = [lw_speed, rw_speed, cv_speed]
         if DEBUG:
-            print("speed = ", speeds, "in driving straight fctn control line 296")
+            print("speed = ", speeds, "in driving straight fctn control line 291")
         return limit_full_throttle(speeds)
 
     def get_speed_for_turn(self, angle, passed_time):
         # direction is positive if we have turned too much counterclockwise
-        print("I want to turn in control in line 301")
+        print("I want to turn in control in line 296")
         gains = param.get_angle_pid_gains_control()
         k_prop = gains[0]
         k_deriv = gains[1]
@@ -326,7 +319,7 @@ class Control:
             print("angle  error = ", angle)
             print("k_prop = ", k_prop)
             print("speed magnitude = ", speed_value)
-            print("speed = ", speeds, "in turning fctn control line 327")
+            print("speed = ", speeds, "in turning fctn control line 322")
         return limit_full_throttle(speeds)
 
 

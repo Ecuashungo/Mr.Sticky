@@ -2,8 +2,6 @@
 # license removed for brevity
 
 import sys
-#sys.path.append("/home/odroid/sticky-robot/software/state_machine")
-#import robot_structure as rs
 sys.path.append("/home/odroid/sticky-robot/software/control")
 import control as ct
 sys.path.append("/home/odroid/sticky-robot/software/parameters/")
@@ -18,7 +16,6 @@ DEBUG = param.get_debug_verbose() # can be zero or one for debugging perposes
 NOSPEED = 0
 
 if __name__ == '__main__':
-    # FIXME we could implement rospy.time here to stop (zero speed at 10 mintues)
     ctrl = ct.Control()
 
     rospy.init_node('control', anonymous=True)
@@ -27,7 +24,6 @@ if __name__ == '__main__':
     rospy.Subscriber("kalman", pos_msg, ctrl.cb_kalman)
     rospy.Subscriber("IR", ir_array_msg, ctrl.cb_ir_sensors)
 
-    # todo publish constantly the new control (if not available, publish old until 10s passed), then publish 0 control
     pub = rospy.Publisher('control', Int16MultiArray , queue_size=1)
     rate = rospy.Rate(10)  # 10hz
 

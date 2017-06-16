@@ -1,18 +1,9 @@
 import numpy as np
-import math
-from random import uniform
 import sys
 sys.path.append("/home/odroid/sticky-robot/software/parameters/")
-sys.path.append("C:/Users/Oechslin/sticky-robot/software/parameters/")
 import parameters as param
-import time
 import math
 import rospy
-
-
-# TODO check the grabbing state, and also releasing
-# todo tune obstacle avoidance, implement bdetector then implement triangulation
-
 
 # Define constants
 DEBUG = param.get_debug_verbose() # can be zero or one for debugging purposes
@@ -27,8 +18,6 @@ STAGE_Y = 6  # [m] y coord where the stage begins
 HOME_XY = 2  # [m] coords for the home base
 ARENA_LIMIT_MAX = 7.8  # [m] define the maximum of the arena
 ARENA_LIMIT_MIN = 0.2
-# FIXME prolong the goal along the direct path and cut it on the border instead of perpendicular shifts
-
 
 class State_pose:
     def __init__(self, name, pos=[0., 0., 0., 0., 0.]):
@@ -59,10 +48,9 @@ class State_machine():
         self.way_points= {"home": [0.5, 0.5, 0], "zone_1": [4, 4, 0], "zone_2": [4, 1, 0],
                           "zone_3": [1.5, 6.5, 0], "corner": [4.5, 5.5, 0], "before_ramp": [7.75, 5, math.pi/2],
                           "after_ramp": [7.75, 7.5, math.pi/2], "zone_4": [6.5, 7, -math.pi]}
-        # FIXME might be easier to save the zone_4 as [corner, before_ramp, after_ramp, zone_4]
         # list of goals that want to be reached
         self.goal_list = []
-        self.goal_list.append(self.way_points['zone_1'])  # TODO add goals here
+        self.goal_list.append(self.way_points['zone_1'])
         self.goal_list.append(self.way_points['zone_3'])
         self.goal_list.append(self.way_points['zone_2'])
 
@@ -154,9 +142,6 @@ class State_machine():
         right_blocked = self.ir_right > param.get_ir_right_threshold_fsm()
 
         # check IR sensors, check camera
-        if DEBUG:
-            #print("avoid_obstacles: ", goal)
-            pass
         if left_blocked:
             if center_blocked:
                 if right_blocked:
@@ -231,10 +216,6 @@ class State_machine():
             self.goal_update_time = rospy.get_time()
             self.state = "go_to_point"
 
-        if DEBUG:
-            #print("compute goal: ", goal)
-            #print("time now = ", rospy.get_time(), "line 200")
-            pass
 
         if self.ir_back > param.get_ir_back_threshold_fsm() and self.state is not "init":
             if self.amount_of_bottle_grab_trials > 0:
@@ -248,17 +229,16 @@ class State_machine():
             self.state = "grabbing"
             self.bottle_angle_allowance = NO
 
-
         if self.bottle_found and not self.hunting and self.state is not "init":
             if math.fabs(self.x_angle_to_bottle) < self.bottle_angle_allowance:  # bottle within allowance
                 if DEBUG:
-                    print("I found a bottle and want to go there, in state_machine line 249")
+                    print("I found a bottle and want to go there, in state_machine line 235")
                 self.state = "go_to_point"
                 new_goal = self.create_goal_from_bottle()
                 goal.x = new_goal[0]
                 goal.y = new_goal[1]
                 goal.theta = new_goal[2]
-                print("the appended bottle pos = ", goal, " in state line 255")
+                print("the appended bottle pos = ", goal, " in state line 241")
                 self.hunting = True
 
         if self.state == 'recovery':
@@ -293,7 +273,6 @@ class State_machine():
                     goal.x = self.way_points['after_ramp'][0]
                     goal.y = self.way_points['after_ramp'][1]
                     goal.theta = self.way_points['after_ramp'][2]
-                    # FIXME this might be cut off by the corner as soon as it gets to the end of the ramp
 
             if self.robot_is_at_home():
                 # disallow bottles
@@ -307,7 +286,6 @@ class State_machine():
                     goal.conv_direction = CV_LOAD
                     if rospy.get_time() - self.bottle_release_time > param.get_bottle_releasing_time_fsm():
                         # FIXME move forward to make it easier
-                        # change state, no cv speed
                         self.releasing = False
                         self.state = "go_to_point"
                     pass
@@ -332,28 +310,24 @@ class State_machine():
 
                 if DEBUG:
                     print(goal.get_state_pose_as_vec())
-                    print("goal = ", goal.x, goal.y, goal.theta, "in state_machine line 328")
+                    print("goal = ", goal.x, goal.y, goal.theta, "in state_machine line 313")
 
                 # if we are already there: update state
                 if self.are_we_there(goal):
-                    # FIXME if stuck too long at same goal, choose another one
                     if self.hunting and self.bottle_found:
                         # if we think we are there but are still hunting
                         new_goal = self.create_goal_from_bottle()
                         goal.x = new_goal[0]
                         goal.y = new_goal[1]
                         goal.theta = new_goal[2]
-                        # FIXME del goal_list[-1] check if this is appended so that we should delete it from list
                     else:
                         self.state = "lookout"
                         del self.goal_list[-1]
                         if DEBUG:
-                            print("goal list = ", self.goal_list[-1], "in state machine line 344")
-                            #self.goal_list.append([0, 0, math.pi])
-                            #self.state = "go_to_point"
+                            print("goal list = ", self.goal_list[-1], "in state machine line 327")
 
                 if (self.hunting):
-                    if self.ir_bottom > param.get_ir_bottom_threshold_fsm(): # FIXME tune this parameter
+                    if self.ir_bottom > param.get_ir_bottom_threshold_fsm():
                         # we are close already, initiate grabbing
                         self.state = "grabbing"
                         self.bottle_angle_allowance = 0
@@ -370,18 +344,13 @@ class State_machine():
             # self robot is on the lookout for bottles
             goal = self.my_pose
             goal.theta = self.limit_angle_to_2pi(goal.theta + param.get_turning_angle_increment_fsm())
-
-            print("limited angle in lookout state machine line 349 = ", goal.theta)
-
             self.bottle_angle_allowance = math.pi  # accept a bottle everywhere
-            # FIXME do we enter lookout when we go to a bottle, but we don't see it anymroe
 
         elif self.state == 'grabbing':
             if DEBUG:
                 print("The robot is right in front of a bottle and only needs to grab it")
 
             if self.started_grabbing:
-                #print(" I have started grabbing, temp pose is", self.temp_bottle_approach_pos.x, self.temp_bottle_approach_pos.y, " state 373")
                 goal.x = self.temp_bottle_approach_pos_x
                 goal.y = self.temp_bottle_approach_pos_y
 
@@ -398,20 +367,18 @@ class State_machine():
                         self.my_pose.conv_direction = CV_REST
                         return goal
                 if DEBUG:
-                    print("entered the started grabbing line 376 state, left encoder dist =", self.l_encoder_dist, " minus first = ", self.l_encoder_before_grabbing)
+                    print("entered the started grabbing line 370 state, left encoder dist =", self.l_encoder_dist, " minus first = ", self.l_encoder_before_grabbing)
                 #if True:
                 if self.l_encoder_dist - self.l_encoder_before_grabbing > param.get_grabbing_encoder_distance_fsm():
                     #if True:
                     if self.r_encoder_dist - self.r_encoder_before_grabbing > param.get_grabbing_encoder_distance_fsm():
                         # we are at the given distance
                         if DEBUG:
-                            print("I entered both if's --> did 20 cm in state line 378")
+                            print("I entered both if's --> did 20 cm in state line 377")
                         goal = self.my_pose
-                        # FIXME stop loading when the second sensor detects something
-                        # fixme 2 stop unloading when second sensor detects
                         if self.loading:
                             if DEBUG:
-                                print("I started loading and want to turn the cv belt in line 383")
+                                print("I started loading and want to turn the cv belt in line 381")
                             goal.conv_direction = CV_LOAD
                             if not self.started_loading:
                                 self.c_encoder_before_turning = self.c_encoder_dist
@@ -419,7 +386,7 @@ class State_machine():
                                 self.started_loading = True
                             if self.ir_front > param.get_ir_front_threshold_fsm():
                                 if DEBUG:
-                                    print("the front cv belt sensor has detected a bottle, stop loading in state line 390")
+                                    print("the front cv belt sensor has detected a bottle, stop loading in state line 389")
                                 # bottle is on conveyor belt
                                 self.started_grabbing = False
                                 self.started_loading = False
@@ -427,25 +394,23 @@ class State_machine():
                                 self.state = "go_to_point"
                                 self.loading_time = None
                                 self.amount_of_bottle_grab_trials += 1
-                                print("I switched to goto in line 412")
+                                print("I switched to goto in line 397")
                                 return goal
                         else:
                             goal.conv_direction = CV_UNLOAD
 
-
                         if self.started_loading:  # loading maneuver has started, needs to step when threshold is reached
                             if self.c_encoder_dist - self.c_encoder_before_turning > param.get_turning_encoder_distance_fsm():
                                 if DEBUG:
-                                    print("we have turned enough in line 403")
+                                    print("we have turned enough in line 405")
                                 # we have turned too far
                                 self.loading = False
-
 
                         if not self.loading:
                             if self.c_encoder_dist - self.c_encoder_before_turning < 0:
                                 # we have turned the conveyor belt back at its initial position
                                 if DEBUG:
-                                    print("we have turned the conveyor belt back at its initial position in line 411")
+                                    print("we have turned the conveyor belt back at its initial position in line 413")
                                 self.loading = True
                                 self.started_grabbing = False
 
@@ -460,7 +425,7 @@ class State_machine():
 
             else:
                 if DEBUG:
-                    print("entered grabbing phase and declared initial state in line 409")
+                    print("entered grabbing phase and declared initial state in line 428")
                 # save initial pose
                 self.l_encoder_before_grabbing = self.l_encoder_dist
                 self.r_encoder_before_grabbing = self.r_encoder_dist
@@ -475,9 +440,8 @@ class State_machine():
                     print('Goal: ', goal)
                     print('goal.x: ', goal.x)
                     print('goal.y: ', goal.y)
-                #goal.conv_direction = CV_LOAD
                 if DEBUG:
-                    print("next goal is at ", goal, "in state in line 419")
+                    print("next goal is at ", goal, "in state in line 444")
 
         else:
             print("Impossible state")
@@ -496,7 +460,7 @@ class State_machine():
             if goal.y - self.my_pose.y < param.get_tolerance_for_immobility():
                 self.i_am_stuck += 1
                 if DEBUG:
-                    print("getting stuck counter is on ", self.i_am_stuck)
+                    print("getting stuck counter is on ", self.i_am_stuck, "line 463 in finite state machine")
                 if self.i_am_stuck > 1000:
                     if self.goal_list is not None:
                         del self.goal_list[-1]
@@ -504,7 +468,7 @@ class State_machine():
                     self.goal_list.append(self.way_points['home'])
                     self.i_am_stuck = 0
                     if DEBUG:
-                        print("we are stuck, we want to go home")
+                        print("we are stuck, we want to go home in state machine line 471")
 
         return goal
 
@@ -551,7 +515,7 @@ class State_machine():
                         diff = rospy.get_time() - self.initial_time
                         print("time diff = ", diff)
                     if rospy.get_time() - self.initial_time > param.get_button_hold_time_fsm():  # [s] seconds until robot starts
-                        self.initial_time = rospy.get_time()  # FIXME was zero before
+                        self.initial_time = rospy.get_time()
                         self.state = "go_to_point"
                         #self.state = "grabbing"
         return
@@ -561,9 +525,7 @@ class State_machine():
         r_wheel = param.get_radius_of_wheel()
         reduction = param.get_reduction_ratio_motor()
         coeff_conveyor = 0.061  # this parameter has been tested and worked
-        if DEBUG:
-            #print("encoder callback called in line 439")
-            pass
+
         self.l_encoder_dist = float(data.l_encoder) / impulsion / reduction * 2 * math.pi * r_wheel
         self.r_encoder_dist = float(data.r_encoder) / impulsion / reduction * 2 * math.pi * r_wheel
         self.c_encoder_dist = float(data.c_encoder) / impulsion / reduction * coeff_conveyor
@@ -593,7 +555,7 @@ class State_machine():
 
     def bound_goal_to_arena(self, goal):
         if DEBUG:
-            print("goal = ", goal, " in bound goal to arena line 489")
+            print("goal = ", goal, " in bound goal to arena line 558")
         if goal.x > ARENA_LIMIT_MAX:
             goal.x = ARENA_LIMIT_MAX
         elif goal.x < ARENA_LIMIT_MIN:
@@ -604,7 +566,6 @@ class State_machine():
         elif goal.y < ARENA_LIMIT_MIN:
             goal.y = ARENA_LIMIT_MIN
 
-        # FIXME put also bounds on angle
         return goal
 
     def limit_angle_to_2pi(self, angle):

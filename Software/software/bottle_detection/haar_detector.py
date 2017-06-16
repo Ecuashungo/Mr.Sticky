@@ -325,10 +325,6 @@ class HaarDetector:
 
         return return_list
 
-
-    def visualize(self):
-        cv2.imshow('self.frame', self.frame)
-
     def visualize_buffer(self):
 
         print('\n visualize_buffer: \n')

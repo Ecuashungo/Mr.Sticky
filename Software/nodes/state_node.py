@@ -12,7 +12,6 @@ from sticky_robot.msg import ir_array_msg
 from sticky_robot.msg import bumper_msg
 from sticky_robot.msg import enc_array_msg
 sys.path.append("/home/odroid/sticky-robot/software/parameters/")
-sys.path.append("C:/Users/Oechslin/sticky-robot/software/parameters/")
 import parameters as param
 
 # Define parameters
@@ -23,7 +22,6 @@ if __name__ == '__main__':
     state_machine = fsm.State_machine()
 
     rospy.init_node('state_machine', anonymous=True)
-    # FIXME some stuff is not really needed
     rospy.Subscriber("bottles", bottle_msg, state_machine.cb_bdetector)
     rospy.Subscriber("kalman", pos_msg, state_machine.cb_kalman)
     rospy.Subscriber("IR", ir_array_msg, state_machine.cb_ir_sensors)
